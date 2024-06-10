@@ -40,15 +40,15 @@
 
     :if ([:len $mensagemTelegram] > 0 ) do={
         :local nomeSistema [system identity get name]
-        :local botToken "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-        :local meuID "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        :local Token "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        :local Chat "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         :local mensagemFixadaTelegram
         :local caracter
 		# Adiciona Cabeçalho
         :set mensagemTelegram ("%E2%9C%85 [$nomeSistema] %E2%9C%85 %0A%0A %E2%99%A6 Alerta Logs:%E2%99%A6 %0A%0A ".$mensagemTelegram)
 
         :do {
-            tool fetch url="https://api.telegram.org/bot$botToken/sendmessage?chat_id=$meuID&text=$mensagemTelegram" mode=https keep-result=no 
+            tool fetch url="https://api.telegram.org/bot$Token/sendmessage?chat_id=$Chat&text=$mensagemTelegram" mode=https keep-result=no 
         }
     }
 }
