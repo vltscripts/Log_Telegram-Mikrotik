@@ -40,7 +40,7 @@
 
     :if ([:len $mensagemTelegram] > 0 ) do={
         :local nomeSistema [system identity get name]
-        :local Token "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        :local Token "xxxxxxxxxxxxxxxxxxxxxxxxxxx"
         :local Chat "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         :local mensagemFixadaTelegram
         :local caracter
