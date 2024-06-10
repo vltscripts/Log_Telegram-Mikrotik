@@ -1,0 +1,54 @@
+# Script de Monitoramento de Logs
+
+:local horaAgora [system clock get time]
+:local data [system clock get date]
+:local logs
+
+# Verifica se é antes das 5h da manhã local. Se sim, busca logs desde a meia-noite do mesmo dia até 4 minutos antes do horário atual.
+# Caso contrário, busca logs nos últimos 4 minutos.
+:if ([:pick $horaAgora 0 2] < 05) do={
+    :local logTodos [log find]
+    :foreach h in=$logTodos do={
+        :local horaLog [log get $h time]
+        # Verifica se o log está no mesmo dia e dentro do intervalo de 4 minutos antes do horário atual
+        :if (($horaLog ~ [:pick $data 0 6]) and ([:pick $horaLog 0 8] > ($horaAgora - 00:04:00))) do={
+            :set logs ($logs, $h)
+        }
+    }
+} else={
+    # Para horários após as 5h da manhã, busca logs nos últimos 4 minutos.
+    :set logs [log find time >= ($horaAgora - 00:04:00)]
+}
+
+:if ([:len $logs] > 0 ) do={
+    :local mensagemTelegram
+       
+    :foreach i in=$logs do={
+        :local mensagem [log get $i message]
+        :local indexInicio ([:find $mensagem "<" -1] + 7)
+        :local mensagemLimpa [:pick $mensagem $indexInicio [:len $mensagem]]
+        :if ($mensagem ~"telnet" and $mensagem ~"logged in") do={} else={
+            :local topicos [log get $i topics]
+            :if ($mensagem ~"authentication failed" ) do={               
+
+                :local horaAtual ([:pick $data 0 11]." ".[ log get $i time ])                
+                # Adiciona todos os logs para o Telegram
+                :set mensagemTelegram ($mensagemTelegram . "%F0%9F%94%B6"."  ". $horaAtual . " - " . $mensagemLimpa . "%0A%0A")
+            }
+        }
+    }
+
+    :if ([:len $mensagemTelegram] > 0 ) do={
+        :local nomeSistema [system identity get name]
+        :local botToken "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        :local meuID "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        :local mensagemFixadaTelegram
+        :local caracter
+		# Adiciona Cabeçalho
+        :set mensagemTelegram ("%E2%9C%85 [$nomeSistema] %E2%9C%85 %0A%0A %E2%99%A6 Alerta Logs:%E2%99%A6 %0A%0A ".$mensagemTelegram)
+
+        :do {
+            tool fetch url="https://api.telegram.org/bot$botToken/sendmessage?chat_id=$meuID&text=$mensagemTelegram" mode=https keep-result=no 
+        }
+    }
+}
