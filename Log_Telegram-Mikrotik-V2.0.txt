@@ -31,8 +31,8 @@
 
     :if ([:len $mensagemTelegram] > 0) do={
         :local nomeSistema [system identity get name]
-        :local Token "xxxxxxxxxxxx"
-        :local Chat "xxxxxxxxxxxxx"
+        :local Token "xxxxxxxxxxxxx"
+        :local Chat "xxxxxxxxxxxxxx"
         :local mensagemFixadaTelegram
 
         # Adiciona Cabeçalho
