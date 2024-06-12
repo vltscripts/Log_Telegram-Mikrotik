@@ -3,7 +3,7 @@ Esse Script tem como objetivo pegar informações do log do Mikrotik " authentic
 
 Esse script pode ser util para ficar monitorando os pppoes, caso de algum problema no mk-auth.
 
-So pegar o arquivo que esta acima " Log_Telegram-Mikrotik " e editar ele colocando seu Token e seu Chat-ID.
+So pegar o arquivo que esta acima "Log_Telegram-Mikrotik-V2.0 " e editar ele colocando seu Token e seu Chat-ID.
 
 Só colocar o script ja editado em system --> Scheduler e colocar para rodar a cada uns 30 segundos.
 
