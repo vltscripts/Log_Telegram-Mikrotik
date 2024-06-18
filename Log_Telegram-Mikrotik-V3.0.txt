@@ -1,0 +1,95 @@
+# Configuração inicial
+:local Token "xxxxxxxxxxxxxxxxxxxxxx"
+:local ChatID "xxxxxxxxxxxxxxxxxxxxx"
+:local myserver ("%E2%9C%85 [" . [/system identity get name] . "] %E2%9C%85 %0A%0A %E2%99%A6 Alerta Logs:%E2%99%A6 %0A ")
+:local scheduleName "LogFilter"
+:local startBuf [:toarray [/log find where message~"authentication failed"]]
+:local removeThese {"link";"telnet"}
+
+# Renomeia script1 para LogFilter se não existir um script com esse nome
+:local newName "LogFilter"
+:local existingScript [/system script find where name=$newName]
+:if ([:len $existingScript] = 0) do={
+    /system script set script1 name=$newName
+    /log warning "Script renomeado para $newName"
+}
+
+# Verifica se o agendamento com o nome LogFilter existe; caso contrário, cria-o
+:if ([:len [/system scheduler find name="$scheduleName"]] = 0) do={
+    /log warning "[LogFilter] Alerta: O agendamento não existe. Criando agendamento..."
+    /system scheduler add name=$scheduleName interval=30s start-date=May/01/2024 start-time=00:00:00 on-event=LogFilter
+    /log warning "[LogFilter] Alerta: Agendamento criado!"
+}
+
+# Obtém o último horário do comentário do agendador
+:local lastTime [/system scheduler get [find name="$scheduleName"] comment]
+
+# Para verificar o horário de cada entrada de log
+:local currentTime
+:local message
+:local output
+:local keepOutput false
+
+# Define keepOutput como verdadeiro se lastTime estiver vazio
+:if ([:len $lastTime] = 0) do={
+    :set keepOutput true
+}
+
+:local counter 0
+
+# Loop através de todas as entradas de log encontradas
+:foreach i in=$startBuf do={
+    :local keepLog true
+    
+    # Loop através de todos os itens do array removeThese
+    :foreach j in=$removeThese do={
+        # Se esta entrada de log contiver qualquer um dos termos em removeThese, mantenha keepLog como false
+        :if ([/log get $i message] ~ "$j") do={
+            :set keepLog false
+        }
+    }
+    
+    # Se keepLog for verdadeiro, adicionar esta entrada de log à saída
+    :if ($keepLog = true) do={
+        :set message [/log get $i message]
+        :set currentTime [/log get $i time]
+        
+        # Formatação da data do log
+        :if ([:len $currentTime] = 8) do={
+            :set currentTime ([:pick [/system clock get date] 0 11]." ".$currentTime)
+        } else={
+            :if ([:len $currentTime] = 15) do={
+                :set currentTime ([:pick $currentTime 0 6]."/".[:pick [/system clock get date] 7 11]." ".[:pick $currentTime 7 15])
+            }
+        }
+        
+        # Se keepOutput for verdadeiro, adicionar esta entrada de log à saída
+        :if ($keepOutput = true) do={
+            :set output ($output. "%F0%9F%94%B6 ".$currentTime.$message."%0A%0A")
+        }
+        
+        # Se currentTime for igual a lastTime, definir keepOutput como verdadeiro e limpar a saída
+        :if ($currentTime = $lastTime) do={
+            :set keepOutput true
+            :set output ""
+        }
+    }
+    
+    # Incrementar o contador
+    :set counter ($counter + 1)
+    
+    # Verificar se é a última entrada de log
+    :if ($counter = ([:len $startBuf])-1) do={
+        :if ($keepOutput = false) do={
+            :if ([:len $message] > 0) do={
+                :set output ($output.$currentTime."%0A%E2%99%A6 ".$message)
+            }
+        }
+    }
+}
+
+# Se houver conteúdo na saída, atualizar o comentário do agendador e enviar mensagem pelo Telegram
+if ([:len $output] > 0) do={
+    /system scheduler set [find name="$scheduleName"] comment=$currentTime
+    /tool fetch url="https://api.telegram.org/bot$Token/sendMessage\?chat_id=$ChatID&text=$myserver%0A%0A$output" keep-result=no;
+}
